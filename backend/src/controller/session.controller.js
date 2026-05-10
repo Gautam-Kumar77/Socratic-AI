@@ -34,19 +34,45 @@ const calculateFocusStreak = (sessions) => {
     );
 
     let streak = 0;
-    const cursor = new Date();
+    const today = new Date();
+    const todayKey = today.toISOString().slice(0, 10);
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = yesterday.toISOString().slice(0, 10);
 
-    while (true) {
-        const key = cursor.toISOString().slice(0, 10);
-        if (!sessionDays.has(key)) {
-            break;
-        }
+    let active = false;
+    let expired = false;
 
-        streak += 1;
-        cursor.setDate(cursor.getDate() - 1);
+    // Check if the user has studied today or yesterday
+    if (sessionDays.has(todayKey)) {
+        active = true;
+    } else if (sessionDays.has(yesterdayKey)) {
+        active = true;
     }
 
-    return streak;
+    if (active) {
+        let cursor = new Date(sessionDays.has(todayKey) ? today : yesterday);
+        while (true) {
+            const key = cursor.toISOString().slice(0, 10);
+            if (!sessionDays.has(key)) break;
+            streak += 1;
+            cursor.setDate(cursor.getDate() - 1);
+        }
+    } else {
+        // Did they have a streak before that broke?
+        if (sessions.length > 0) {
+            // Find the last study date
+            const sortedDates = Array.from(sessionDays).sort((a, b) => new Date(b) - new Date(a));
+            const lastSessionDate = sortedDates[0];
+            // If the last session is older than yesterday, the streak expired
+            if (lastSessionDate && lastSessionDate < yesterdayKey) {
+                expired = true;
+            }
+        }
+    }
+
+    return { streak, expired };
 };
 
 const buildStudyHours = (sessions) => {
@@ -61,12 +87,13 @@ const buildStudyHours = (sessions) => {
         }
 
         const dayIndex = (updatedAt.getDay() + 6) % 7;
-        hoursByDay[dayIndex] += session.timeSpent / 3600;
+        const timeSpent = Number(session.timeSpent) || 0;
+        hoursByDay[dayIndex] += timeSpent / 3600;
     });
 
     return labels.map((label, index) => ({
         label,
-        hours: Number(hoursByDay[index].toFixed(1))
+        hours: Number(hoursByDay[index].toFixed(2)) // Changed from 1 to 2 decimal places to capture small sessions
     }));
 };
 
@@ -150,7 +177,7 @@ exports.getProgress = async (req, res) => {
             .reduce((sum, session) => sum + (Number(session.timeSpent) || 0), 0) / 3600;
 
         const conceptsMastered = calculateMastery(sessions, totalSeconds);
-        const focusStreak = calculateFocusStreak(sessions);
+        const { streak: focusStreak, expired: streakExpired } = calculateFocusStreak(sessions);
         const weeklyGoalHours = user?.weeklyGoalHours || 17;
 
         return res.status(200).json({
@@ -159,7 +186,9 @@ exports.getProgress = async (req, res) => {
                 weeklyGoal: `${weeklyHours.toFixed(1)}/${weeklyGoalHours}h`,
                 weeklyGoalHours,
                 conceptsMastered,
-                focusStreak: `${focusStreak} ${focusStreak === 1 ? 'Day' : 'Days'}`
+                focusStreak: `${focusStreak} ${focusStreak === 1 ? 'Day' : 'Days'}`,
+                streakCount: focusStreak,
+                streakExpired: streakExpired
             },
             studyHours: buildStudyHours(sessions),
             subjectMastery: buildSubjectMastery(sessions),
@@ -206,6 +235,7 @@ exports.getAllSessions = async (req, res) => {
         const totalSeconds = sessions.reduce((acc, s) => acc + (Number(s.timeSpent) || 0), 0);
         const totalHours = (totalSeconds / 3600).toFixed(1);
         const conceptsMastered = calculateMastery(sessions, totalSeconds);
+        const { streak: focusStreak, expired: streakExpired } = calculateFocusStreak(sessions);
 
         return res.status(200).json({
             success: true,
@@ -213,7 +243,10 @@ exports.getAllSessions = async (req, res) => {
             stats: {
                 totalSessions: sessions.length,
                 totalHours: parseFloat(totalHours),
-                conceptsMastered
+                totalSeconds,
+                conceptsMastered,
+                focusStreak,
+                streakExpired
             },
             sessions
         });
