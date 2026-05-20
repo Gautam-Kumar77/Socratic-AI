@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema({
     },
     preferredSubjects: {
         type: [String],
-        enum: ['Physics', 'Chemistry', 'Math', 'Biology'],
+        enum: ['Physics', 'Chemistry', 'Math', 'Biology', 'Computer'],
         default: []
     }
 }, { timestamps: true });

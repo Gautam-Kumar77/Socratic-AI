@@ -113,7 +113,7 @@ exports.getCurrentUser = async (req, res) => {
         const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
         const payload = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(payload.id).select('name email avatarUrl username bio preferredSubjects');
+        const user = await User.findById(payload.id).select('name email avatarUrl username bio preferredSubjects createdAt');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -127,7 +127,8 @@ exports.getCurrentUser = async (req, res) => {
                 avatarUrl: user.avatarUrl,
                 username: user.username,
                 bio: user.bio,
-                preferredSubjects: user.preferredSubjects
+                preferredSubjects: user.preferredSubjects,
+                createdAt: user.createdAt
             }
         });
     } catch (error) {

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const Session = require('../../db/session.js');
 const User = require('../../db/user.js');
 
-const SUBJECTS = ['Physics', 'Math', 'Chemistry', 'Biology'];
+const SUBJECTS = ['Physics', 'Math', 'Chemistry', 'Biology', 'Computer'];
 
 const getUserIdFromRequest = (req) => {
     const authHeader = req.headers.authorization || '';
@@ -16,13 +16,13 @@ const getUserIdFromRequest = (req) => {
     return payload.id;
 };
 
-const getStartOfWeek = () => {
+const getStartOfWeek = (weekOffset = 0) => {
     const now = new Date();
     // Reset to midnight today to prevent partial-day exclusion
     now.setHours(0, 0, 0, 0);
     const day = now.getDay();
     // Monday is 1, Sunday is 0. If Sun(0), go back 6 days, else go back (day-1) days.
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1) + (weekOffset * 7);
     const startOfWeek = new Date(now);
     startOfWeek.setDate(diff);
     return startOfWeek;
@@ -75,14 +75,17 @@ const calculateFocusStreak = (sessions) => {
     return { streak, expired };
 };
 
-const buildStudyHours = (sessions) => {
+const buildStudyHours = (sessions, weekOffset = 0) => {
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const startOfWeek = getStartOfWeek();
+    const startOfWeek = getStartOfWeek(weekOffset);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+
     const hoursByDay = new Array(7).fill(0);
 
     sessions.forEach((session) => {
         const updatedAt = new Date(session.updatedAt);
-        if (updatedAt < startOfWeek) {
+        if (updatedAt < startOfWeek || updatedAt >= endOfWeek) {
             return;
         }
 
@@ -115,7 +118,8 @@ const buildSubjectMastery = (sessions) => {
 
     return SUBJECTS.map((subject) => {
         const hours = totals[subject] / 3600;
-        const mastery = Math.min(95, Math.round(hours * 18) + (hours > 0 ? 20 : 0));
+        // Scale mastery linearly where 20 hours = 100% mastery. Add a base 2% if they started the subject so it's not completely empty.
+        const mastery = Math.min(100, Math.round((hours / 20) * 100) + (hours > 0 ? 2 : 0));
         return {
             subject,
             mastery
@@ -167,13 +171,23 @@ exports.endSession = async (req, res) => {
 exports.getProgress = async (req, res) => {
     try {
         const userId = getUserIdFromRequest(req);
+        const weekOffset = parseInt(req.query.weekOffset) || 0;
         const user = await User.findById(userId).select('weeklyGoalHours').lean();
         const sessions = await Session.find({ user: userId }).sort({ updatedAt: -1 }).lean();
 
         const totalSessions = sessions.length;
         const totalSeconds = sessions.reduce((sum, session) => sum + (Number(session.timeSpent) || 0), 0);
+        
+        // Calculate weekly hours based on the offset
+        const startOfWeek = getStartOfWeek(weekOffset);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 7);
+        
         const weeklyHours = sessions
-            .filter((session) => new Date(session.updatedAt) >= getStartOfWeek())
+            .filter((session) => {
+                const updatedAt = new Date(session.updatedAt);
+                return updatedAt >= startOfWeek && updatedAt < endOfWeek;
+            })
             .reduce((sum, session) => sum + (Number(session.timeSpent) || 0), 0) / 3600;
 
         const conceptsMastered = calculateMastery(sessions, totalSeconds);
@@ -190,7 +204,7 @@ exports.getProgress = async (req, res) => {
                 streakCount: focusStreak,
                 streakExpired: streakExpired
             },
-            studyHours: buildStudyHours(sessions),
+            studyHours: buildStudyHours(sessions, weekOffset),
             subjectMastery: buildSubjectMastery(sessions),
             insight: totalSeconds > 0
                 ? "You're building strong momentum. Keep showing up for short focused sessions and your mastery bars will keep climbing."
