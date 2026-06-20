@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Socratic AI
+
+This is the codebase for Socratic AI, a full-stack chat interface for AI tutoring and session management. 
+
+It is split into a Next.js frontend and an Express/Node.js backend.
+
+## Features
+
+- Authentication: Standard JWT-based login and registration.
+- Account Management: Users can update their username, upload avatars, and delete their accounts.
+- Password Recovery: Reset passwords using security questions.
+- Chat Interface: Routes for sending messages to the AI tutor and managing chat sessions.
+- UI: Built with TailwindCSS, includes dark mode support via next-themes.
+
+## Tech Stack
+
+Frontend (/frontend)
+- Next.js (App Router)
+- React 19
+- TailwindCSS v4
+- react-hook-form and zod (form validation)
+- lucide-react (icons)
+- TypeScript
+
+Backend (/backend)
+- Node.js and Express
+- MongoDB and Mongoose
+- JWT (jsonwebtoken) and bcrypt
+- multer (for avatar uploads)
+
+## Architecture
+
+This is a standard decoupled client-server setup.
+
+1. Frontend: Handles the UI, client-side state, and routing. It talks to the backend via HTTP requests. It is responsible for keeping track of the JWT for authenticated routes.
+2. Backend: Handles the business logic, database operations, and authentication. It exposes a REST API (/api/auth, /api/tutor, /api/session).
+3. Auth Flow: The client sends credentials to /api/auth/login. The server verifies them against MongoDB and returns a JWT. The client saves this token and attaches it to the Authorization header for any protected API calls.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js (v18+)
+- A MongoDB instance (local or Atlas)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Setup
+
+1. Install root dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Install frontend dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+3. Install backend dependencies:
+   ```bash
+   cd backend
+   npm install
+   ```
+
+### Environment Variables
+
+In the backend directory, create a .env file:
+```env
+PORT=5001
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+(Optional) In the frontend directory, create a .env file if you need to point to a different API URL:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5001/api
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Running the App
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+You can start everything from the root directory.
 
-## Learn More
+Run both frontend and backend (Recommended):
+```bash
+npm run both
+```
+Eg. C:\AI assist\Socratic-AI> npm run both
 
-To learn more about Next.js, take a look at the following resources:
+Run them separately:
+- Frontend only: npm run frontend (or npm run dev in the frontend/ folder)
+Eg. C:\AI assist\Socratic-AI\frontend> npm run dev 
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Backend only: npm run backend (or npm start in the backend/ folder)
+Eg. C:\AI assist\Socratic-AI\backend> npm run start
+Local URLs:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5001
