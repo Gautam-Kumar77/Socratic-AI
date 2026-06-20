@@ -14,7 +14,11 @@ if (process.env.FRONTEND_URL) {
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || whitelist.includes(origin) || whitelist.some(url => origin.startsWith(url))) {
+        if (!origin 
+            || whitelist.includes(origin) 
+            || whitelist.some(url => origin.startsWith(url))
+            || origin.endsWith('.onrender.com')
+        ) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
