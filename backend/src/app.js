@@ -8,9 +8,13 @@ const app = express();
 
 // middleware
 const whitelist = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+if (process.env.FRONTEND_URL) {
+    whitelist.push(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || whitelist.includes(origin)) {
+        if (!origin || whitelist.includes(origin) || whitelist.some(url => origin.startsWith(url))) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));

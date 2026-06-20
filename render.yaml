@@ -15,6 +15,11 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: socratic-ai-frontend
+          envVarKey: RENDER_EXTERNAL_URL
 
   # Frontend Next.js Service
   - type: web
@@ -26,7 +31,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: NEXT_PUBLIC_API_URL
+      - key: NEXT_PUBLIC_API_BASE_URL
         fromService:
           type: web
           name: socratic-ai-backend
