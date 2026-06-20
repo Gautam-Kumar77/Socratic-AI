@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../lib/api';
@@ -36,7 +36,7 @@ const SECURITY_QUESTIONS = [
   'What is your dream job?',
 ];
 
-export default function LoginPage() {
+function LoginContent() {
   const [isLoginTab, setIsLoginTab] = useState(true);
   const [forgotStep, setForgotStep] = useState<'email' | 'answers' | 'reset'>('email');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -797,5 +797,17 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 transition-colors duration-500">
+        <p className="text-lg text-slate-700 dark:text-slate-200 font-bold">Loading...</p>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
