@@ -1,0 +1,17 @@
+commit 47695f4177f8f62b122b4c6846055e515f78561e
+Author: Jatin-Asher <jatinsharma2002oct@gmail.com>
+Date:   Tue Mar 24 23:42:56 2026 +0530
+
+    Added Api Service
+
+M	backend/node_modules/.package-lock.json
+M	backend/package-lock.json
+M	backend/package.json
+A	backend/routes/tutor.routes.js
+M	backend/src/app.js
+A	backend/src/controller/tutor.controller.js
+M	src/app/dashboard/page.js
+M	src/app/dashboard/session/page.js
+M	src/app/login/page.tsx
+M	src/app/page.tsx
+A	src/components/theme-toggle.tsx
